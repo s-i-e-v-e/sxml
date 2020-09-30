@@ -1,0 +1,10 @@
+(html @xmlns "http://www.w3.org/1999/xhtml"
+      @xml:lang en
+      @lang en
+      @id 5
+  (head (title `An example page))
+  (body
+    (h1 @id greeting `Hi, there!)
+    (p `This is just an >>example<< to show XHTML & SXML.)
+  )
+)

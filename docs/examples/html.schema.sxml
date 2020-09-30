@@ -1,0 +1,13 @@
+(schema @start html
+(define attribute xmlns (text))
+(define attribute xml:lang (text))
+(define attribute lang (text))
+(define attribute type (text))
+(define element html (? xmlns xml:lang lang type) (id) (head body))
+(define element head (title))
+(define element body (* p h1))
+(define attribute id (* text))
+(define element h1 (? id) (text))
+(define element p (text))
+(define element title (text))
+)

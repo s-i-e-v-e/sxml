@@ -33,3 +33,10 @@ Equivalent SXML:
   )
 )
 ```
+
+## Getting Started
+
+* Install [Deno](https://deno.land/) (`curl -fsSL https://deno.land/x/install/install.sh | sh`)
+* Clone this repository
+* Install *sxml* using `deno install -fA src/sxml.ts`. Do this every time you update the repository so that the latest changes are compiled.
+* See `sxml --help` for more information.
