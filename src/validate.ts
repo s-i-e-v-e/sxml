@@ -6,10 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 import {ElementNode} from "./parse.ts";
-
-function invalid(msg?: string): never {
-	throw new Error(msg);
-}
+import {invalid} from "./common.ts";
 
 type SchemaMap = Map<string, string[][]>;
 
@@ -25,8 +22,12 @@ function build_schema_root(schema: ElementNode): [string, State] {
 		.map(x => x as ElementNode)
 		.map(x => {
 			if (x.type !== "ELEMENT") throw new Error();
-			if (x.name !== "define") throw new Error();
-			const type = (x.xs.shift()! as ElementNode).name;
+			let type: string;
+			switch (x.name) {
+				case 'def-attr': type = 'attribute'; break;
+				case 'def-el': type = 'element'; break;
+				default: invalid(x.name);
+			}
 			const name = (x.xs.shift()! as ElementNode).name;
 
 			const xs = x.xs.map(y => y as ElementNode).map(y => {
@@ -40,7 +41,7 @@ function build_schema_root(schema: ElementNode): [string, State] {
 						if (!['?', '*', '+'].filter(_ => y.name === _).length) ys.push('!');
 						break;
 					}
-					default: invalid();
+					default: invalid(type);
 				}
 				ys.push(y.name);
 				ys.push(...y.xs.map(z => z as ElementNode).map(z => z.name))
@@ -56,7 +57,7 @@ function build_schema_root(schema: ElementNode): [string, State] {
 					element_defs.set(name, xs);
 					break;
 				}
-				default: throw new Error();
+				default: invalid(type);
 			}
 		});
 

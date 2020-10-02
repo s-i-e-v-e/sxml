@@ -5,6 +5,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
+import {invalid} from "./common.ts";
+
 const Symbols = new Set(["#", "[", "]", "{", "}", "(", ")", "@", '"']);
 
 type TokenType = "ID" | "ATTR" | "TEXT" | "STRING" | "SYM";
@@ -150,6 +152,14 @@ function push(xs: Token[], x: Token) {
 	xs.push(x);
 }
 
+/**
+ * DESIGN
+ * ------
+ * ID: peek() => (...)
+ * STRING: peek() => "...."
+ * ATTR: peek() = @...WHITESPACE
+ * TEXT: ..." | ...@ | ...(
+ */
 function lex(x: string): Token[] {
 	x = x.replace(/\r\n?/g, "\n");
 
@@ -169,24 +179,23 @@ function lex(x: string): Token[] {
 			skip_ws(cs);
 			const x = read_id(cs);
 			push(xs, x);
-		} else if (x === "@") {
+		}
+		else if (x === ":") {
+			cs_next(cs);
+			push(xs, read_id(cs));
+		}
+		else if (x === "@") {
 			cs_next(cs);
 			push(xs, read_id(cs, "ATTR"));
-			skip_ws(cs);
-			if (cs_peek(cs) === '"') {
-				push(xs, read_string(cs));
-			} else {
-				push(xs, read_id(cs));
-			}
-		} else if (x === '"') {
+		}
+		else if (x === '"') {
 			push(xs, read_string(cs));
-		} else if (x === "`") {
-			cs_next(cs);
-			push(xs, read_text(cs));
-		} else if (Symbols.has(x)) {
+		}
+		else if (Symbols.has(x)) {
 			push(xs, new_sym(cs.index, cs_next(cs)));
-		} else {
-			push(xs, read_id(cs));
+		}
+		else {
+			push(xs, read_text(cs));
 		}
 	}
 	return xs;
@@ -205,10 +214,14 @@ function parse_el(ts: TokenStream): ElementNode {
 		if (a.type === "ATTR") {
 			const n = ts_next(ts);
 			const v = ts_next(ts);
-			if (v.type === "ID" || v.type === "STRING") {
-				attrs.push({ name: n.lexeme, value: v.lexeme });
-			} else {
-				throw new Error();
+			switch (v.type) {
+				case "ID":
+				case "TEXT":
+				case "STRING": {
+					attrs.push({ name: n.lexeme, value: v.lexeme.trim() });
+					break;
+				}
+				default: invalid(v.type);
 			}
 		} else {
 			break;
@@ -253,4 +266,22 @@ export function parse(x: string) {
 		eof: false,
 	};
 	return parse_el(ts);
+}
+
+export function dump(x: Node){
+	switch (x.type) {
+		case "ELEMENT": {
+			const y = x as ElementNode;
+			console.log(`Element: ${y.name}`);
+			y.attrs.forEach(a => console.log(`Attr: @${a.name} = "${a.value}"`));
+			y.xs.forEach(dump);
+			break;
+		}
+		case "TEXT": {
+			const y = x as TextNode;
+			console.log(`Text: [${y.value}]`);
+			break;
+		}
+		default: invalid(x.type);
+	}
 }

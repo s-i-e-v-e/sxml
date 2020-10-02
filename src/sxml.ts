@@ -39,7 +39,7 @@ function exec_validate(source_file: string, schema_file: string) {
 	validate(a, b);
 }
 
-function sxml(args: string[]) {
+export function main(args: string[]) {
 	const cmd = args[0];
 	switch(cmd) {
 		case "parse": exec_parse(args[1]); break;
@@ -52,4 +52,4 @@ function sxml(args: string[]) {
 	}
 }
 
-if (import.meta.main) sxml(Deno.args);
+if (import.meta.main) main(Deno.args);
