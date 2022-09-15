@@ -1,10 +1,13 @@
 /*
- * Copyright (c) 2020 Sieve
+ * Copyright (c) 2022 Sieve
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
+import {TokenStream} from "https://raw.githubusercontent.com/s-i-e-v-e/nonstd/master/src/ts/data/ts.ts";
+import {CharacterStream} from "https://raw.githubusercontent.com/s-i-e-v-e/nonstd/master/src/ts/data/cs.ts";
+
 import {invalid} from "./common.ts";
 
 const Symbols = new Set(["#", "[", "]", "{", "}", "(", ")", "@", '"']);
@@ -12,22 +15,10 @@ const Symbols = new Set(["#", "[", "]", "{", "}", "(", ")", "@", '"']);
 type TokenType = "ID" | "ATTR" | "TEXT" | "STRING" | "SYM";
 type NodeType = "ELEMENT" | "TEXT";
 
-interface CharStream {
-	x: string;
-	index: number;
-	eof: boolean;
-}
-
 interface Token {
 	type: TokenType;
 	index: number;
 	lexeme: string;
-}
-
-interface TokenStream {
-	xs: Token[];
-	index: number;
-	eof: boolean;
 }
 
 export interface Node {
@@ -49,74 +40,39 @@ export interface ElementNode extends Node {
 	xs: Node[];
 }
 
-function cs_peek(cs: CharStream) {
-	return cs.x[cs.index];
-}
-
-function cs_next(cs: CharStream) {
-	const x = cs_peek(cs);
-	cs.index += 1;
-	cs.eof = cs.index >= cs.x.length;
-	return x;
-}
-
-function cs_back(cs: CharStream) {
-	cs.index -= 1;
-	cs.eof = cs.index >= cs.x.length;
-}
-
-function ts_peek(ts: TokenStream) {
-	return ts.xs[ts.index];
-}
-
-function ts_next(ts: TokenStream) {
-	const x = ts_peek(ts);
-	ts.index += 1;
-	ts.eof = ts.index >= ts.xs.length;
-	return x;
-}
-
-function skip_ws(cs: CharStream) {
-	while (!cs.eof) {
-		const x = cs_next(cs);
-		const exit = !(x === " " || x === "\n" || x === "\t");
-		if (exit) break;
-	}
-	cs_back(cs);
-}
-
-function read_text(cs: CharStream): Token {
-	const index = cs.index;
-	while (!cs.eof) {
-		const x = cs_next(cs);
+function read_text(cs: CharacterStream): Token {
+	const index = cs.get_index();
+	while (!cs.eof()) {
+		const x = cs.peek();
 		const exit = Symbols.has(x);
 		if (exit) break;
+		cs.next();
 	}
-	cs_back(cs);
-	const x = cs.x.substring(index, cs.index)
-	if (!x.length) throw new Error();
+	const x = cs.substring(index, cs.get_index())
+	const y = x.trim();
+	if (!y.length) throw new Error();
 	return {
 		type: "TEXT",
 		index: index,
-		lexeme: x,
+		lexeme: y,
 	};
 }
 
-function read_id(cs: CharStream, type: TokenType = "ID"): Token {
-	const index = cs.index;
-	while (!cs.eof) {
-		const x = cs_next(cs);
+function read_id(cs: CharacterStream, type: TokenType = "ID"): Token {
+	const index = cs.get_index();
+	while (!cs.eof()) {
+		const x = cs.peek();
 		if (x === "?" || x === "*" || x === "+") {
-			cs_next(cs);
+			cs.next();
 			break;
 		}
 		const exit =
 			!(x === ":" || x === "-" || (x >= "a" && x <= "z") ||
 				(x >= "0" && x <= "9"));
 		if (exit) break;
+		cs.next();
 	}
-	cs_back(cs);
-	const x = cs.x.substring(index, cs.index)
+	const x = cs.substring(index, cs.get_index())
 	if (!x.length) throw new Error();
 	return {
 		type: type,
@@ -125,18 +81,18 @@ function read_id(cs: CharStream, type: TokenType = "ID"): Token {
 	};
 }
 
-function read_string(cs: CharStream): Token {
-	cs_next(cs);
-	const index = cs.index;
-	while (!cs.eof) {
-		const x = cs_next(cs);
+function read_string(cs: CharacterStream): Token {
+	cs.next();
+	const index = cs.get_index();
+	while (!cs.eof()) {
+		const x = cs.next();
 		const exit = x === '"';
 		if (exit) break;
 	}
 	return {
 		type: "STRING",
 		index: index,
-		lexeme: cs.x.substring(index, cs.index - 1),
+		lexeme: cs.substring(index, cs.get_index() - 1),
 	};
 }
 
@@ -160,60 +116,54 @@ function push(xs: Token[], x: Token) {
  * ATTR: peek() = @...WHITESPACE
  * TEXT: ..." | ...@ | ...(
  */
-function lex(x: string): Token[] {
-	x = x.replace(/\r\n?/g, "\n");
-
-	const cs = {
-		x: x,
-		index: 0,
-		eof: false,
-	};
+function lex(x: string): TokenStream<Token> {
+	const cs = new CharacterStream(x.replace(/\r\n?/g, "\n"));
 
 	const xs: Token[] = [];
-	while (!cs.eof) {
-		skip_ws(cs);
-		if (cs.eof) break;
-		const x = cs_peek(cs);
+	while (true) {
+		cs.skip_ws();
+		if (cs.eof()) break;
+		const x = cs.peek();
 		if (x === "(") {
-			push(xs, new_sym(cs.index, cs_next(cs)));
-			skip_ws(cs);
+			push(xs, new_sym(cs.get_index(), cs.next()));
+			cs.skip_ws();
 			const x = read_id(cs);
 			push(xs, x);
 		}
 		else if (x === ":") {
-			cs_next(cs);
+			cs.next();
 			push(xs, read_id(cs));
 		}
 		else if (x === "@") {
-			cs_next(cs);
+			cs.next();
 			push(xs, read_id(cs, "ATTR"));
 		}
 		else if (x === '"') {
 			push(xs, read_string(cs));
 		}
 		else if (Symbols.has(x)) {
-			push(xs, new_sym(cs.index, cs_next(cs)));
+			push(xs, new_sym(cs.get_index(), cs.next()));
 		}
 		else {
 			push(xs, read_text(cs));
 		}
 	}
-	return xs;
+	return new TokenStream(xs);
 }
 
-function parse_el(ts: TokenStream): ElementNode {
-	if (ts_next(ts).lexeme !== "(") throw new Error();
+function parse_el(ts: TokenStream<Token>): ElementNode {
+	if (ts.next().lexeme !== "(") throw new Error();
 
-	const e = ts_next(ts);
+	const e = ts.next();
 	if (e.type !== "ID") throw new Error();
 	const name = e.lexeme;
 
 	const attrs: Attr[] = [];
-	while (!ts.eof) {
-		const a = ts_peek(ts);
+	while (!ts.eof()) {
+		const a = ts.peek();
 		if (a.type === "ATTR") {
-			const n = ts_next(ts);
-			const v = ts_next(ts);
+			const n = ts.next();
+			const v = ts.next();
 			switch (v.type) {
 				case "ID":
 				case "TEXT":
@@ -229,15 +179,15 @@ function parse_el(ts: TokenStream): ElementNode {
 	}
 
 	const xs: Node[] = [];
-	while (!ts.eof) {
-		const a = ts_peek(ts);
+	while (!ts.eof()) {
+		const a = ts.peek();
 		if (a.type === "TEXT") {
-			const n: TextNode = { type: "TEXT", value: ts_next(ts).lexeme };
+			const n: TextNode = { type: "TEXT", value: ts.next().lexeme };
 			xs.push(n);
 		} else if (a.type === "ID") {
 			const n: ElementNode = {
 				type: "ELEMENT",
-				name: ts_next(ts).lexeme,
+				name: ts.next().lexeme,
 				attrs: [],
 				xs: [],
 			};
@@ -248,9 +198,9 @@ function parse_el(ts: TokenStream): ElementNode {
 			break;
 		}
 	}
-	const y = ts_peek(ts);
-	if (y.lexeme !== ")") throw new Error();
-	ts_next(ts);
+
+	if (ts.next().lexeme !== ")") throw new Error();
+
 	return {
 		name: name,
 		type: "ELEMENT",
@@ -260,11 +210,7 @@ function parse_el(ts: TokenStream): ElementNode {
 }
 
 export function parse(x: string) {
-	const ts = {
-		xs: lex(x),
-		index: 0,
-		eof: false,
-	};
+	const ts = lex(x);
 	return parse_el(ts);
 }
 
