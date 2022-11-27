@@ -8,7 +8,7 @@
 import {TokenStream} from "https://raw.githubusercontent.com/s-i-e-v-e/nonstd/v0.1/src/ts/data/ts.ts";
 import {CharacterStream} from "https://raw.githubusercontent.com/s-i-e-v-e/nonstd/v0.1/src/ts/data/cs.ts";
 
-const Symbols = new Set(["@", "[", "]", "{", "}", "(", ")"]);
+const Symbols = new Set(["@", "[", "]", "{", "}", "(", ")", "\\"]);
 
 type TokenType = "ID" | "ATTR" | "TEXT" | "STRING" | "SYM" | "COMMENT";
 
@@ -27,7 +27,8 @@ function read_text(cs: CharacterStream): Token {
         cs.next();
     }
     const x = cs.substring(index, cs.get_index())
-    const y = x.trim();
+    //const y = x.trim();
+    const y = x;
     if (!y.length) throw new Error();
     return {
         type: "TEXT",
@@ -40,6 +41,7 @@ function read_id(cs: CharacterStream, type: TokenType = "ID"): Token {
     const index = cs.get_index();
     while (!cs.eof()) {
         const x = cs.peek();
+        if (x === "\\") break;
         if (x === "?" || x === "*" || x === "+") {
             cs.next();
             break;
@@ -114,9 +116,12 @@ export {TokenStream, type Token};
  * ATTR: peek() = @...WHITESPACE
  * TEXT: ..." | ...@ | ...(
  */
-export function lex(x: string): TokenStream<Token> {
+export function lex(x: string, debug: boolean): TokenStream<Token> {
     const cs = new CharacterStream(x.replace(/\r\n?/g, "\n"));
 
+    const fix_ws = (ns: number, a: Token) => {
+        if (ns) a.lexeme = " "+a.lexeme;
+    };
     const _read_id = () => {
         cs.next();
         push(xs, read_id(cs));
@@ -124,14 +129,32 @@ export function lex(x: string): TokenStream<Token> {
     const _read_comment = () => {
         push(xs, read_comment(cs));
     };
+    const _read_text = (ns: number) => {
+        const a = read_text(cs);
+        fix_ws(ns, a);
+        push(xs, a);
+    };
+    const _new_sym = (x?: string) => {
+        let n = cs.get_index();
+        if (x) {
+            n -= 1;
+        }
+        else {
+            x = cs.next();
+        }
+        push(xs, new_sym(n, x));
+    };
 
     const xs: Token[] = [];
+    let n = 0;
     while (true) {
-        cs.skip_ws();
         if (cs.eof()) break;
+        let ns = cs.get_index();
+        cs.skip_ws();
+        ns = cs.get_index() - ns;
         const x = cs.peek();
         if (x === "(") {
-            push(xs, new_sym(cs.get_index(), cs.next()));
+            _new_sym();
             cs.skip_ws();
             if (cs.peek() === ":") {
                 _read_id();
@@ -143,6 +166,25 @@ export function lex(x: string): TokenStream<Token> {
             else {
                 const x = read_id(cs);
                 push(xs, x);
+                cs.skip_ws();
+            }
+        }
+        else if (x === "\\") {
+            cs.next();
+            const a = cs.peek();
+            if (a === '(') {
+                _new_sym();
+                xs[xs.length-1].type = "TEXT";
+                fix_ws(ns, xs[xs.length-1]);
+                _read_text(0);
+            }
+            else if (a === ')') {
+                _new_sym();
+                xs[xs.length-1].type = "TEXT";
+                fix_ws(ns, xs[xs.length-1]);
+            }
+            else {
+                _new_sym("\\");
             }
         }
         else if (x === ":") {
@@ -159,10 +201,14 @@ export function lex(x: string): TokenStream<Token> {
             push(xs, read_string(cs));
         }
         else if (Symbols.has(x)) {
-            push(xs, new_sym(cs.get_index(), cs.next()));
+            _new_sym();
         }
         else {
-            push(xs, read_text(cs));
+            _read_text(ns);
+        }
+        if (debug && n !== xs.length) {
+            console.log(xs[xs.length-1]);
+            n = xs.length;
         }
     }
     return new TokenStream(xs);

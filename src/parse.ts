@@ -99,12 +99,12 @@ function parse_el(ts: TokenStream<Token>): ElementNode {
 	};
 }
 
-export function parse(x: string) {
-	const ts = lex(x);
+export function parse(x: string, debug: boolean) {
+	const ts = lex(x, debug);
 	return parse_el(ts);
 }
 
-export function dump(x: Node){
+function dump(x: Node){
 	switch (x.type) {
 		case "ELEMENT": {
 			const y = x as ElementNode;

@@ -3,7 +3,7 @@
 (def-attr :xml:lang :text:)
 (def-attr :lang :text)
 (def-attr :type :text)
-(def-el :html (? :xmlns :xml:lang :lang :type) (id) (head :body))
+(def-el :html (? :xmlns :xml:lang :lang :type) (? id) (head :body))
 (def-el :head :title)
 (def-el :body (* :p :h1))
 (def-attr :id (* :text))
