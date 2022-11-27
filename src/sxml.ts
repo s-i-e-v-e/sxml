@@ -7,6 +7,7 @@
  */
 import { parse } from "./parse.ts";
 import { validate } from "./validate.ts";
+import {generate} from "./generate.ts";
 
 const read = (file: string) => Deno.readTextFileSync(file);
 const println = console.log;
@@ -25,6 +26,7 @@ function help() {
 	println('version, --version        Display version information.');
 	println('parse file                Parse file');
 	println('validate file schema      Validate file against schema');
+	println('generate file ext  	   Generate xml file');
 }
 
 function exec_parse(file: string) {
@@ -39,11 +41,19 @@ function exec_validate(source_file: string, schema_file: string) {
 	validate(a, b);
 }
 
+function exec_generate(source_file: string, ext: string) {
+	const source = read(source_file);
+	const a = parse(source);
+	const b = generate(a, ext);
+	console.log(b);
+}
+
 export function main(args: string[]) {
 	const cmd = args[0];
 	switch(cmd) {
 		case "parse": exec_parse(args[1]); break;
 		case "validate": exec_validate(args[1], args[2]); break;
+		case "generate": exec_generate(args[1], args[2]); break;
 		case "--version":
 		case "version": version(); break;
 		case "--help":
