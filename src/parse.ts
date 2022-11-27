@@ -103,21 +103,3 @@ export function parse(x: string, debug: boolean) {
 	const ts = lex(x, debug);
 	return parse_el(ts);
 }
-
-function dump(x: Node){
-	switch (x.type) {
-		case "ELEMENT": {
-			const y = x as ElementNode;
-			console.log(`Element: ${y.name}`);
-			y.attrs.forEach(a => console.log(`Attr: @${a.name} = "${a.value}"`));
-			y.xs.forEach(dump);
-			break;
-		}
-		case "TEXT": {
-			const y = x as TextNode;
-			console.log(`Text: [${y.value}]`);
-			break;
-		}
-		default: invalid(x.type);
-	}
-}

@@ -5,7 +5,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-import {ElementNode, TextNode} from "./parse.ts";
+import {ElementNode, Node, TextNode} from "./parse.ts";
+import {invalid} from "./common.ts";
 
 function dump_el(e: ElementNode, level: number) {
     const xs = [] as string[];
@@ -52,4 +53,22 @@ function dump_el(e: ElementNode, level: number) {
 
 export function dump(doc: ElementNode) {
     dump_el(doc, 0);
+}
+
+function dump0(x: Node){
+    switch (x.type) {
+        case "ELEMENT": {
+            const y = x as ElementNode;
+            console.log(`Element: ${y.name}`);
+            y.attrs.forEach(a => console.log(`Attr: @${a.name} = "${a.value}"`));
+            y.xs.forEach(dump0);
+            break;
+        }
+        case "TEXT": {
+            const y = x as TextNode;
+            console.log(`Text: [${y.value}]`);
+            break;
+        }
+        default: invalid(x.type);
+    }
 }

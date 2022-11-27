@@ -8,7 +8,14 @@
 import {TokenStream} from "https://raw.githubusercontent.com/s-i-e-v-e/nonstd/v0.1/src/ts/data/ts.ts";
 import {CharacterStream} from "https://raw.githubusercontent.com/s-i-e-v-e/nonstd/v0.1/src/ts/data/cs.ts";
 
-const Symbols = new Set(["@", "[", "]", "{", "}", "(", ")", "\\"]);
+const OpenBracket = new Set(["[", "{", "(", ]);
+const CloseBracket = new Set(["]", "}", ")", ]);
+const CommentChar = ";";
+const EscapeChar = "`";
+const Symbols = new Set();
+["@", EscapeChar, CommentChar].forEach(x => Symbols.add(x));
+OpenBracket.forEach(x => Symbols.add(x));
+CloseBracket.forEach(x => Symbols.add(x));
 
 type TokenType = "ID" | "ATTR" | "TEXT" | "STRING" | "SYM" | "COMMENT";
 
@@ -16,6 +23,14 @@ interface Token {
     type: TokenType;
     index: number;
     lexeme: string;
+}
+
+function token(type: TokenType, index: number, lexeme: string): Token {
+    return {
+        type: type,
+        index: index,
+        lexeme: lexeme,
+    };
 }
 
 function read_text(cs: CharacterStream): Token {
@@ -27,21 +42,15 @@ function read_text(cs: CharacterStream): Token {
         cs.next();
     }
     const x = cs.substring(index, cs.get_index())
-    //const y = x.trim();
-    const y = x;
-    if (!y.length) throw new Error();
-    return {
-        type: "TEXT",
-        index: index,
-        lexeme: y,
-    };
+    if (!x.length) throw new Error();
+    return token("TEXT", index, x);
 }
 
-function read_id(cs: CharacterStream, type: TokenType = "ID"): Token {
+function read_atom(cs: CharacterStream, type: TokenType): Token {
     const index = cs.get_index();
     while (!cs.eof()) {
         const x = cs.peek();
-        if (x === "\\") break;
+        if (x === EscapeChar) break;
         if (x === "?" || x === "*" || x === "+") {
             cs.next();
             break;
@@ -54,11 +63,15 @@ function read_id(cs: CharacterStream, type: TokenType = "ID"): Token {
     }
     const x = cs.substring(index, cs.get_index())
     if (!x.length) throw new Error();
-    return {
-        type: type,
-        index: index,
-        lexeme: x,
-    };
+    return token(type, index, x);
+}
+
+function read_id(cs: CharacterStream): Token {
+    return read_atom(cs, "ID");
+}
+
+function read_attr(cs: CharacterStream): Token {
+    return read_atom(cs, "ATTR");
 }
 
 function read_string(cs: CharacterStream): Token {
@@ -81,7 +94,7 @@ function read_comment(cs: CharacterStream): Token {
     const index = cs.get_index();
     while (!cs.eof()) {
         const x = cs.next();
-        const exit = x === ')';
+        const exit = x === '\n';
         if (exit) break;
     }
     return {
@@ -126,22 +139,15 @@ export function lex(x: string, debug: boolean): TokenStream<Token> {
         cs.next();
         push(xs, read_id(cs));
     };
-    const _read_comment = () => {
-        push(xs, read_comment(cs));
-    };
     const _read_text = (ns: number) => {
         const a = read_text(cs);
         fix_ws(ns, a);
         push(xs, a);
     };
-    const _new_sym = (x?: string) => {
-        let n = cs.get_index();
-        if (x) {
-            n -= 1;
-        }
-        else {
-            x = cs.next();
-        }
+    const _new_sym = (pos: number, x?: string) => {
+        const n = cs.get_index() + pos;
+        const y = pos ? x! : cs.next();
+        x = x || y;
         push(xs, new_sym(n, x));
     };
 
@@ -153,61 +159,70 @@ export function lex(x: string, debug: boolean): TokenStream<Token> {
         cs.skip_ws();
         ns = cs.get_index() - ns;
         const x = cs.peek();
-        if (x === "(") {
-            _new_sym();
+        if (OpenBracket.has(x)) {
+            _new_sym(0, "(");
             cs.skip_ws();
-            if (cs.peek() === ":") {
+            const y = cs.peek();
+            if (y === ":") {
                 _read_id();
             }
-            else if (cs.peek() === "#") {
-                xs.pop();
-                _read_comment();
+            else if (y === CommentChar) {
+                // skip
             }
             else {
-                const x = read_id(cs);
-                push(xs, x);
+                push(xs, read_id(cs));
                 cs.skip_ws();
             }
         }
-        else if (x === "\\") {
+        else if (CloseBracket.has(x)) {
+            _new_sym(0, ")");
+        }
+        else if (x === CommentChar) {
+            _new_sym(0);
+            if (cs.peek() === CommentChar) {
+                pop(xs);
+                read_comment(cs);
+            }
+        }
+        else if (x === EscapeChar) {
             cs.next();
             const a = cs.peek();
-            if (a === '(') {
-                _new_sym();
+            if (OpenBracket.has(a)) {
+                _new_sym(0, "(");
                 xs[xs.length-1].type = "TEXT";
                 fix_ws(ns, xs[xs.length-1]);
                 _read_text(0);
             }
-            else if (a === ')') {
-                _new_sym();
+            else if (CloseBracket.has(a)) {
+                _new_sym(0, ")");
                 xs[xs.length-1].type = "TEXT";
                 fix_ws(ns, xs[xs.length-1]);
             }
             else {
-                _new_sym("\\");
+                _new_sym(0, EscapeChar);
             }
-        }
-        else if (x === ":") {
-            _read_id();
-        }
-        else if (x === "#") {
-            _read_comment();
         }
         else if (x === "@") {
             cs.next();
-            push(xs, read_id(cs, "ATTR"));
+            push(xs, read_attr(cs));
         }
         else if (x === '"') {
             push(xs, read_string(cs));
-        }
-        else if (Symbols.has(x)) {
-            _new_sym();
+            cs.skip_ws();
         }
         else {
-            _read_text(ns);
+            if (x === ":") {
+                _read_id();
+            }
+            else {
+                _read_text(ns);
+            }
         }
-        if (debug && n !== xs.length) {
-            console.log(xs[xs.length-1]);
+        if (debug) {
+            const m = xs.length-n;
+            for (let i = 0; i < m; i++) {
+                console.log(xs[xs.length-m+i]);
+            }
             n = xs.length;
         }
     }

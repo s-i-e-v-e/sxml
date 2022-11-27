@@ -7,7 +7,15 @@
  */
 import {ElementNode, TextNode} from "./parse.ts";
 
-function generate_el(xs: string[], e: ElementNode) {
+const SelfClosingHtml = new Set([
+    "meta",
+    "link",
+   "image",
+    "hr",
+    "br",
+]);
+
+function generate_el(xs: string[], scs: Set<string>, e: ElementNode) {
     xs.push('<');
     xs.push(e.name);
     if (e.attrs.length) {
@@ -20,25 +28,28 @@ function generate_el(xs: string[], e: ElementNode) {
             xs.push('"');
         }
     }
-    xs.push('>');
-
-    for (const x of e.xs) {
-        switch (x.type) {
-            case "ELEMENT": generate_el(xs, x as ElementNode); break;
-            case "TEXT": {
-                let a = (x as TextNode).value;
-                a = a.replaceAll('&', '&amp;');
-                a = a.replaceAll('<', '&lt;');
-                a = a.replaceAll('>', '&gt;');
-                xs.push(a);
-            } break;
-            default: throw new Error();
-        }
+    if (scs.has(e.name)) {
+        xs.push('/>');
     }
-
-    xs.push('</');
-    xs.push(e.name);
-    xs.push('>');
+    else {
+        xs.push('>');
+        for (const x of e.xs) {
+            switch (x.type) {
+                case "ELEMENT": generate_el(xs, scs, x as ElementNode); break;
+                case "TEXT": {
+                    let a = (x as TextNode).value;
+                    a = a.replaceAll('&', '&amp;');
+                    a = a.replaceAll('<', '&lt;');
+                    a = a.replaceAll('>', '&gt;');
+                    xs.push(a);
+                } break;
+                default: throw new Error();
+            }
+        }
+        xs.push('</');
+        xs.push(e.name);
+        xs.push('>');
+    }
 }
 
 export function generate(doc: ElementNode, ext: string) {
@@ -50,6 +61,6 @@ export function generate(doc: ElementNode, ext: string) {
         }
         default: throw new Error();
     }
-    generate_el(xs, doc);
+    generate_el(xs, SelfClosingHtml, doc);
     return xs.join('');
 }

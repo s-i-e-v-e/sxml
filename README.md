@@ -15,21 +15,22 @@ XHTML/XML:
   </head>
   <body>
     <h1 id="greeting">Hi, there!</h1>
-    <p>This is just an &gt;&gt;example&lt;&lt; to show XHTML &amp; SXML.</p>
+    <p>This is just an &gt;&gt;example&lt;&lt; "to" show XHTML &amp; SXML.</p>
   </body>
 </html>
 ```
 
 Equivalent SXML:
 ```
-(html @xmlns http://www.w3.org/1999/xhtml
-      @xml:lang en
-      @lang en
+(html @xmlns "http://www.w3.org/1999/xhtml"
+      @xml:lang "en"
+      @lang "en"
   (head (title An example page))
   (body
     (h1 @id "greeting" Hi, there!)
-    (p This is just an >>example<< to show XHTML & SXML.)
+    (p This is just an >>example<< "to" show XHTML & SXML.)
   )
+;; this is a comment
 )
 ```
 
@@ -41,7 +42,7 @@ XHTML/HTML schema:
    (def-attr :xml:lang :text)
    (def-attr :lang :text)
    (def-attr :type :text)
-   (def-el :html (? :xmlns :xml:lang :lang :type) (id) (head :body))
+   (def-el :html (? :xmlns :xml:lang :lang :type) (? id) (head :body))
    (def-el :head :title)
    (def-el :body (* :p :h1))
    (def-attr :id (* :text))
@@ -62,6 +63,6 @@ XHTML/HTML schema:
 
 - [x] cli: parsing
 - [x] cli: validation against a schema
-- [ ] cli: generate xml (sxml -> xml)
+- [x] cli: generate xml (sxml -> xml)
 - [ ] Implement additional schema definition primitives based on [RELAX NG](https://en.wikipedia.org/wiki/RELAX_NG)
 - [ ] browser: parsing, validation, generation
