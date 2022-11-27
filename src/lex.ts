@@ -120,6 +120,10 @@ function pop(xs: Token[]) {
     xs.pop();
 }
 
+function update_last_token(xs: Token[], type: TokenType) {
+    xs[xs.length-1].type = type;
+}
+
 export {TokenStream, type Token};
 /**
  * DESIGN
@@ -183,19 +187,22 @@ export function lex(x: string, debug: boolean): TokenStream<Token> {
                 pop(xs);
                 read_comment(cs);
             }
+            else {
+                update_last_token(xs, "TEXT");
+            }
         }
         else if (x === EscapeChar) {
             cs.next();
             const a = cs.peek();
             if (OpenBracket.has(a)) {
                 _new_sym(0, "(");
-                xs[xs.length-1].type = "TEXT";
+                update_last_token(xs, "TEXT");
                 fix_ws(ns, xs[xs.length-1]);
                 _read_text(0);
             }
             else if (CloseBracket.has(a)) {
                 _new_sym(0, ")");
-                xs[xs.length-1].type = "TEXT";
+                update_last_token(xs, "TEXT");
                 fix_ws(ns, xs[xs.length-1]);
             }
             else {

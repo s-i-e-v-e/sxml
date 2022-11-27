@@ -10,7 +10,7 @@ import {ElementNode, TextNode} from "./parse.ts";
 const SelfClosingHtml = new Set([
     "meta",
     "link",
-   "image",
+   "img",
     "hr",
     "br",
 ]);
