@@ -30,7 +30,8 @@ export interface ElementNode extends Node {
 }
 
 function parse_el(ts: TokenStream<Token>): ElementNode {
-	if (ts.next().lexeme !== "(") throw new Error();
+	const next = ts.next().lexeme;
+	if (next !== "(") throw new Error(`[${next}]`);
 
 	const e = ts.next();
 	switch (e.type) {

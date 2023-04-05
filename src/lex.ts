@@ -42,7 +42,7 @@ function read_text(cs: CharacterStream): Token {
         cs.next();
     }
     const x = cs.substring(index, cs.get_index())
-    if (!x.length) throw new Error();
+    //if (!x.length) throw new Error(`EMPTY STRING: ${index} : ${cs.substring(index, index+10)}`);
     return token("TEXT", index, x);
 }
 
@@ -62,7 +62,7 @@ function read_atom(cs: CharacterStream, type: TokenType): Token {
         cs.next();
     }
     const x = cs.substring(index, cs.get_index())
-    if (!x.length) throw new Error();
+    if (!x.length) throw new Error(`EMPTY ATOM: ${index} : ${cs.substring(index, index+10)}`);
     return token(type, index, x);
 }
 
