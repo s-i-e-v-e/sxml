@@ -145,8 +145,10 @@ export function lex(x: string, debug: boolean): TokenStream<Token> {
     };
     const _read_text = (ns: number) => {
         const a = read_text(cs);
-        fix_ws(ns, a);
-        push(xs, a);
+        if (a.lexeme) {
+            fix_ws(ns, a);
+            push(xs, a);
+        }
     };
     const _new_sym = (pos: number, x?: string) => {
         const n = cs.get_index() + pos;
