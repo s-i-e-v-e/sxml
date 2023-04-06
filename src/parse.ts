@@ -91,7 +91,8 @@ function parse_el(ts: TokenStream<Token>): ElementNode {
 		}
 	}
 
-	if (ts.next().lexeme !== ")") throw new Error();
+	const next2 = ts.next().lexeme;
+	if (next2 !== ")") throw new Error(`[${next2}]`);
 
 	return {
 		name: name,
