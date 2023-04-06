@@ -85,6 +85,9 @@ function parse_el(ts: TokenStream<Token>): ElementNode {
 			if (x.xs.length || x.attrs.length) {
 				xs.push(x);
 			}
+			else {
+				xs.push(x);
+			}
 		}
 		else {
 			break;
