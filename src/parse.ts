@@ -66,7 +66,8 @@ function parse_el(ts: TokenStream<Token>): ElementNode {
 		if (a.type === "TEXT") {
 			const n: TextNode = { type: "TEXT", value: ts.next().lexeme };
 			xs.push(n);
-		} else if (a.type === "ID") {
+		}
+		else if (a.type === "ID") {
 			const n: ElementNode = {
 				type: "ELEMENT",
 				name: ts.next().lexeme,
