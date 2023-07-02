@@ -1,0 +1,7 @@
+{
+  "imports": {
+    "/" : "./",
+    "./" : "./",
+    "nonstd/": "https://raw.githubusercontent.com/s-i-e-v-e/nonstd/b3483070677dc86c7274b28541f4d2e4c124b76c/src/ts/"
+  }
+}
