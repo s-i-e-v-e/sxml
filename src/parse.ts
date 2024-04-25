@@ -105,7 +105,7 @@ function parse_el(ts: TokenStream<Token>): ElementNode {
 	};
 }
 
-export function parse(x: string, debug: boolean) {
+export function parse(x: string, debug: boolean): ElementNode {
 	const ts = lex(x, debug);
 	return parse_el(ts);
 }

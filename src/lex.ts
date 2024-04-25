@@ -5,8 +5,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-import {TokenStream} from "nonstd/data/ts.ts";
-import {CharacterStream} from "nonstd/data/cs.ts";
+import {CharacterStream, TokenStream} from "@sieve/nonstd";
 
 const OpenBracket = new Set(["[", "{", "(", ]);
 const CloseBracket = new Set(["]", "}", ")", ]);

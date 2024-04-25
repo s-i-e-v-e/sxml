@@ -52,7 +52,7 @@ function generate_el(xs: string[], scs: Set<string>, e: ElementNode) {
     }
 }
 
-export function generate(doc: ElementNode, ext: string) {
+export function generate(doc: ElementNode, ext: string): string {
     const xs = [] as string[];
     switch (ext) {
         case 'html': {

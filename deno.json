@@ -1,7 +1,16 @@
 {
+  "name": "@sieve/sxml",
+  "version": "0.1.0",
   "imports": {
-    "/" : "./",
-    "./" : "./",
-    "nonstd/": "https://raw.githubusercontent.com/s-i-e-v-e/nonstd/b3483070677dc86c7274b28541f4d2e4c124b76c/src/ts/"
+    "@sieve/nonstd": "jsr:@sieve/nonstd@0"
+  },
+  "exports": "./src/mod.ts",
+  "publish": {
+    "include": [
+      "./LICENSE",
+      "./README.md",
+      "./src/**/*.ts",
+      "./deno.json"
+    ]
   }
 }

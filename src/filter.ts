@@ -7,15 +7,15 @@
  */
 import {ElementNode, Node, TextNode} from "./parse.ts";
 
-export function first_text(path: string, n: ElementNode) {
+export function first_text(path: string, n: ElementNode): TextNode {
     return filter_nodes(path, n)[0] as TextNode;
 }
 
-export function first_el(path: string, n: ElementNode) {
+export function first_el(path: string, n: ElementNode): ElementNode {
     return filter_nodes(path, n)[0] as ElementNode;
 }
 
-export function filter_nodes(path: string, n: ElementNode) {
+export function filter_nodes(path: string, n: ElementNode): Node[] {
     const xs = [] as Node[];
     _filter_node(path, n, xs);
     return xs;
@@ -37,7 +37,7 @@ function _filter_node(path: string, n: Node, xs: Node[]) {
     }
 }
 
-export function get_attr(name: string, x: ElementNode) {
+export function get_attr(name: string, x: ElementNode): string {
     const a = x.attrs.filter(y => y.name === name)[0];
     return a ? a.value : '';
 }
