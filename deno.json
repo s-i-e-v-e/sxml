@@ -1,8 +1,8 @@
 {
   "name": "@sieve/sxml",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "imports": {
-    "@sieve/nonstd": "jsr:@sieve/nonstd@0"
+    "@sieve/nonstd/data": "jsr:@sieve/nonstd@0/data"
   },
   "exports": "./src/mod.ts",
   "publish": {
